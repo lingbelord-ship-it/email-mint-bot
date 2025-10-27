@@ -130,7 +130,7 @@ serve(async (req) => {
           `https://api.emaildetective.io/emails/${encodeURIComponent(email)}`,
           {
             headers: {
-              'Authorization': emailDetectiveKey
+              'Authorization': emailDetectiveKey  // Fixed: removed Bearer prefix
             }
           }
         );

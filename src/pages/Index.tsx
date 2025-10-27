@@ -138,13 +138,7 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Stats */}
-        <StatsCards stats={stats} dailyCount={dailyCount} />
-
-        {/* Real-Time Logs */}
-        <GenerationLogs logs={logs} isGenerating={generating} />
-
-        {/* Generate Section */}
+        {/* Generate Section - Moved to Top */}
         <Card className="border-2 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -196,6 +190,12 @@ const Index = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Stats */}
+        <StatsCards stats={stats} dailyCount={dailyCount} />
+
+        {/* Real-Time Logs */}
+        <GenerationLogs logs={logs} isGenerating={generating} />
 
         {/* Emails Table */}
         <EmailsTable emails={emails} loading={loading} />
