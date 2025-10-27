@@ -26,10 +26,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const emailDetectiveKey = Deno.env.get('ABSTRACTAPI_KEY');
-    if (!emailDetectiveKey) {
-      throw new Error('ABSTRACTAPI_KEY not configured');
+    const verifaliaUsername = Deno.env.get('VERIFALIA_USERNAME');
+    const verifaliaPassword = Deno.env.get('VERIFALIA_PASSWORD');
+    if (!verifaliaUsername || !verifaliaPassword) {
+      throw new Error('Verifalia credentials not configured');
     }
+
+    // Create Basic Auth header for Verifalia
+    const authHeader = `Basic ${btoa(`${verifaliaUsername}:${verifaliaPassword}`)}`;
 
     console.log('Starting email generation process with session:', sessionId);
 
@@ -110,14 +114,22 @@ serve(async (req) => {
 
       console.log(`Testing email: ${email}`);
 
-      // Verify email with EmailDetective.io
+      // Verify email with Verifalia
       try {
         const verifyResponse = await fetch(
-          `https://api.emaildetective.io/emails/${encodeURIComponent(email)}`,
+          'https://api.verifalia.com/v2.7/email-validations?waitTime=30000',
           {
+            method: 'POST',
             headers: {
-              'Authorization': `Bearer ${emailDetectiveKey}`
-            }
+              'Authorization': authHeader,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              entries: [
+                { inputData: email }
+              ],
+              quality: 'Standard'
+            })
           }
         );
 
@@ -149,21 +161,42 @@ serve(async (req) => {
           continue;
         }
 
-        const verificationData = await verifyResponse.json();
-
-        // Check if email is valid and deliverable
-        const isValidEmail = verificationData.valid_email === true;
-        const hasValidMX = verificationData.valid_mx === true;
-        const isNotDisposable = verificationData.disposable === false;
-        const hasGoodScore = verificationData.score >= 80; // Require score of at least 80
-        const isLowSuspicion = verificationData.suspicion_rating !== 'HIGH'; // Reject HIGH suspicion emails
+        const verificationResult = await verifyResponse.json();
         
-        const isDeliverable = isValidEmail && hasValidMX && isNotDisposable && hasGoodScore && isLowSuspicion;
-        const isVerified = isValidEmail && hasValidMX;
+        // Check if job is still in progress (HTTP 202) - if so, skip this email
+        if (verificationResult.overview?.status === 'InProgress') {
+          console.log(`SKIPPED - ${email} - Verification still in progress`);
+          continue;
+        }
 
-        // Only add emails that pass all validation checks including score and suspicion rating
+        // Get the first entry from the results
+        const entry = verificationResult.entries?.data?.[0];
+        if (!entry) {
+          console.error(`FAILED - ${email} - No verification entry returned`);
+          failedEmailsSet.add(email);
+          continue;
+        }
+
+        // Map Verifalia classification to our validation logic
+        const classification = entry.classification; // "Deliverable", "Undeliverable", "Risky", "Unknown"
+        const status = entry.status; // e.g., "Success", "DomainDoesNotExist", etc.
+        const isFreeEmail = entry.isFreeEmailAddress === true;
+        const isDisposable = entry.isDisposableEmailAddress === true;
+        const isRoleAccount = entry.isRoleAccount === true;
+        
+        // Consider email deliverable if:
+        // - Classification is "Deliverable"
+        // - Not a disposable email
+        // - Status is "Success"
+        const isDeliverable = classification === 'Deliverable' && 
+                             !isDisposable && 
+                             status === 'Success';
+        
+        const isVerified = classification === 'Deliverable' || classification === 'Risky';
+
+        // Only add emails that pass all validation checks
         if (isDeliverable) {
-          console.log(`SUCCESS - ${email} - Score: ${verificationData.score}, Suspicion: ${verificationData.suspicion_rating}, Valid: ${isValidEmail}, MX: ${hasValidMX}`);
+          console.log(`SUCCESS - ${email} - Classification: ${classification}, Status: ${status}, Free: ${isFreeEmail}, Disposable: ${isDisposable}`);
           
           // Log success
           await supabase
@@ -172,7 +205,7 @@ serve(async (req) => {
               session_id: sessionId,
               email,
               status: 'success',
-              reason: `Score: ${verificationData.score}, Suspicion: ${verificationData.suspicion_rating}`
+              reason: `Classification: ${classification}, Status: ${status}`
             });
           
           generatedEmails.push({
@@ -181,13 +214,13 @@ serve(async (req) => {
             last_name: randomName.last_name,
             is_verified: isVerified,
             is_deliverable: isDeliverable,
-            verification_status: JSON.stringify(verificationData),
+            verification_status: JSON.stringify(entry),
             verified_at: new Date().toISOString()
           });
 
           existingEmailSet.add(email);
         } else {
-          const failReason = `Score: ${verificationData.score}, Suspicion: ${verificationData.suspicion_rating}, Valid: ${isValidEmail}, MX: ${hasValidMX}`;
+          const failReason = `Classification: ${classification}, Status: ${status}, Disposable: ${isDisposable}, Role: ${isRoleAccount}`;
           console.log(`FAILED - ${email} - ${failReason}`);
           
           // Log failure
