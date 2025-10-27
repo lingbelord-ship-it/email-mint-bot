@@ -49,47 +49,93 @@ export const EmailsTable = ({ emails, loading }: EmailsTableProps) => {
                 </tr>
               </thead>
               <tbody>
-                {emails.map((email) => (
-                  <tr key={email.id} className="border-b hover:bg-muted/50 transition-colors">
-                    <td className="p-4">
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {email.email}
-                      </code>
-                    </td>
-                    <td className="p-4">
-                      {email.first_name} {email.last_name}
-                    </td>
-                    <td className="p-4 text-center">
-                      {email.is_verified ? (
-                        <Badge variant="default" className="bg-accent hover:bg-accent">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Verified
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Not Verified
-                        </Badge>
+                {emails.map((email) => {
+                  let apiResponse;
+                  try {
+                    apiResponse = email.verification_status ? JSON.parse(email.verification_status) : null;
+                  } catch {
+                    apiResponse = null;
+                  }
+                  
+                  return (
+                    <>
+                      <tr key={email.id} className="border-b hover:bg-muted/50 transition-colors">
+                        <td className="p-4">
+                          <code className="text-sm bg-muted px-2 py-1 rounded">
+                            {email.email}
+                          </code>
+                        </td>
+                        <td className="p-4">
+                          {email.first_name} {email.last_name}
+                        </td>
+                        <td className="p-4 text-center">
+                          {email.is_verified ? (
+                            <Badge variant="default" className="bg-accent hover:bg-accent">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Not Verified
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-4 text-center">
+                          {email.is_deliverable ? (
+                            <Badge variant="default" className="bg-primary hover:bg-primary">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Deliverable
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Not Deliverable
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-4 text-sm text-muted-foreground">
+                          {new Date(email.created_at).toLocaleString()}
+                        </td>
+                      </tr>
+                      {apiResponse && (
+                        <tr key={`${email.id}-api`} className="border-b bg-muted/30">
+                          <td colSpan={5} className="p-4">
+                            <div className="text-xs">
+                              <div className="font-semibold mb-2 text-muted-foreground">API Response:</div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-muted-foreground">
+                                <div>
+                                  <span className="font-medium">Score:</span> {apiResponse.score}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Suspicion:</span> {apiResponse.suspicion_rating}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Valid Email:</span> {apiResponse.valid_email ? '✓' : '✗'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Valid MX:</span> {apiResponse.valid_mx ? '✓' : '✗'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Disposable:</span> {apiResponse.disposable ? '✓' : '✗'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Free:</span> {apiResponse.free ? '✓' : '✗'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Role:</span> {apiResponse.role ? '✓' : '✗'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Valid SPF:</span> {apiResponse.valid_spf ? '✓' : '✗'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="p-4 text-center">
-                      {email.is_deliverable ? (
-                        <Badge variant="default" className="bg-primary hover:bg-primary">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Deliverable
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Not Deliverable
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground">
-                      {new Date(email.created_at).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           </div>

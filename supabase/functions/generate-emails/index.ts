@@ -187,12 +187,15 @@ serve(async (req) => {
         const isValidEmail = verificationData.valid_email === true;
         const hasValidMX = verificationData.valid_mx === true;
         const isNotDisposable = verificationData.disposable === false;
-        const isDeliverable = isValidEmail && hasValidMX && isNotDisposable;
+        const hasGoodScore = verificationData.score >= 80; // Require score of at least 80
+        const isLowSuspicion = verificationData.suspicion_rating !== 'HIGH'; // Reject HIGH suspicion emails
+        
+        const isDeliverable = isValidEmail && hasValidMX && isNotDisposable && hasGoodScore && isLowSuspicion;
         const isVerified = isValidEmail && hasValidMX;
 
-        // Only add emails that pass validation checks
-        if (isValidEmail && hasValidMX && isNotDisposable) {
-          console.log(`SUCCESS - ${email} - Valid: ${isValidEmail}, MX: ${hasValidMX}, Not Disposable: ${isNotDisposable}`);
+        // Only add emails that pass all validation checks including score and suspicion rating
+        if (isDeliverable) {
+          console.log(`SUCCESS - ${email} - Score: ${verificationData.score}, Suspicion: ${verificationData.suspicion_rating}, Valid: ${isValidEmail}, MX: ${hasValidMX}`);
           
           // Log success
           await supabase
@@ -201,7 +204,7 @@ serve(async (req) => {
               session_id: sessionId,
               email,
               status: 'success',
-              reason: `Valid: ${isValidEmail}, MX: ${hasValidMX}, Not Disposable: ${isNotDisposable}`
+              reason: `Score: ${verificationData.score}, Suspicion: ${verificationData.suspicion_rating}`
             });
           
           generatedEmails.push({
@@ -216,7 +219,7 @@ serve(async (req) => {
 
           existingEmailSet.add(email);
         } else {
-          const failReason = `Valid: ${isValidEmail}, MX: ${hasValidMX}, Disposable: ${!isNotDisposable}`;
+          const failReason = `Score: ${verificationData.score}, Suspicion: ${verificationData.suspicion_rating}, Valid: ${isValidEmail}, MX: ${hasValidMX}`;
           console.log(`FAILED - ${email} - ${failReason}`);
           
           // Log failure
