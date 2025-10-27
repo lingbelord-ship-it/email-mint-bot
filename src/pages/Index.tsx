@@ -21,6 +21,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [emailCount, setEmailCount] = useState(25);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -194,7 +195,10 @@ const Index = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ session_id: sessionId })
+          body: JSON.stringify({ 
+            session_id: sessionId,
+            count: emailCount 
+          })
         }
       );
 
@@ -262,10 +266,25 @@ const Index = () => {
               Generate Verified Emails
             </CardTitle>
             <CardDescription>
-              Generate 25 verified emails per run
+              Set how many emails to generate per run
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex gap-3 items-center">
+              <label htmlFor="emailCount" className="text-sm font-medium whitespace-nowrap">
+                Emails to generate:
+              </label>
+              <input
+                id="emailCount"
+                type="number"
+                min="1"
+                max="100"
+                value={emailCount}
+                onChange={(e) => setEmailCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                disabled={generating}
+                className="w-24 px-3 py-2 border rounded-md bg-background"
+              />
+            </div>
             <div className="flex gap-3">
               <Button
                 onClick={handleGenerate}

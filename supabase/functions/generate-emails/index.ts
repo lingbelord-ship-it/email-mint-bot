@@ -12,13 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    // Get session ID from request body
+    // Get session ID and count from request body
     let sessionId = crypto.randomUUID();
+    let toGenerate = 25;
     try {
       const body = await req.json();
       sessionId = body.session_id || sessionId;
+      toGenerate = body.count || 25;
     } catch {
-      // If no body, use generated session ID
+      // If no body, use defaults
     }
 
     const supabase = createClient(
@@ -36,8 +38,6 @@ serve(async (req) => {
     const authHeader = `Basic ${btoa(`${verifaliaUsername}:${verifaliaPassword}`)}`;
 
     console.log('Starting email generation process with session:', sessionId);
-
-    const toGenerate = 25;
     console.log(`Will generate ${toGenerate} emails`);
 
     // Get all names
