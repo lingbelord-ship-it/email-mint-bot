@@ -56,8 +56,7 @@ serve(async (req) => {
 
     const generatedEmails = [];
     const emailProviders = [
-      'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
-      'protonmail.com', 'aol.com', 'mail.com', 'zoho.com', 'yandex.com'
+      'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'
     ];
     
     // Get failed emails to avoid retrying them
