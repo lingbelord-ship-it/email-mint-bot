@@ -89,6 +89,42 @@ const Index = () => {
     setGenerating(true);
     setLogs([]); // Clear previous logs
     
+    // Generate a unique session ID for this generation run
+    const sessionId = crypto.randomUUID();
+    
+    // Subscribe to real-time logs for this session
+    const channel = supabase
+      .channel(`generation-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'generation_logs',
+          filter: `session_id=eq.${sessionId}`
+        },
+        (payload) => {
+          const newLog: LogEntry = {
+            email: payload.new.email,
+            status: payload.new.status as 'testing' | 'success' | 'failed',
+            reason: payload.new.reason,
+            timestamp: new Date(payload.new.created_at)
+          };
+          
+          setLogs(prev => {
+            // Replace testing status with final status for the same email
+            const existingIndex = prev.findIndex(log => log.email === newLog.email);
+            if (existingIndex !== -1) {
+              const updated = [...prev];
+              updated[existingIndex] = newLog;
+              return updated;
+            }
+            return [...prev, newLog];
+          });
+        }
+      )
+      .subscribe();
+    
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-emails`,
@@ -97,6 +133,7 @@ const Index = () => {
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ session_id: sessionId })
         }
       );
 
@@ -112,11 +149,21 @@ const Index = () => {
       
       await fetchEmails();
       await fetchDailyCount();
+      
+      // Clean up old logs for this session after 30 seconds
+      setTimeout(async () => {
+        await supabase
+          .from('generation_logs')
+          .delete()
+          .eq('session_id', sessionId);
+      }, 30000);
     } catch (error: any) {
       toast.error(error.message || "Failed to generate emails");
       console.error(error);
     } finally {
       setGenerating(false);
+      // Unsubscribe from the channel
+      supabase.removeChannel(channel);
     }
   };
 

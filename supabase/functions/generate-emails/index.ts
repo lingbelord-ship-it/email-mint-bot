@@ -12,6 +12,15 @@ serve(async (req) => {
   }
 
   try {
+    // Get session ID from request body
+    let sessionId = crypto.randomUUID();
+    try {
+      const body = await req.json();
+      sessionId = body.session_id || sessionId;
+    } catch {
+      // If no body, use generated session ID
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -22,7 +31,7 @@ serve(async (req) => {
       throw new Error('EMAIL_DETECTIVE_API_KEY not configured');
     }
 
-    console.log('Starting email generation process...');
+    console.log('Starting email generation process with session:', sessionId);
 
     // Check today's generation count
     const today = new Date().toISOString().split('T')[0];
@@ -122,6 +131,15 @@ serve(async (req) => {
         continue;
       }
 
+      // Log that we're testing this email
+      await supabase
+        .from('generation_logs')
+        .insert({
+          session_id: sessionId,
+          email,
+          status: 'testing'
+        });
+
       console.log(`Testing email: ${email}`);
 
       // Verify email with EmailDetective.io
@@ -138,6 +156,16 @@ serve(async (req) => {
         if (!verifyResponse.ok) {
           const errorText = await verifyResponse.text();
           console.error(`FAILED - ${email} - Status ${verifyResponse.status}: ${errorText}`);
+          
+          // Log failure
+          await supabase
+            .from('generation_logs')
+            .insert({
+              session_id: sessionId,
+              email,
+              status: 'failed',
+              reason: `API Error: ${verifyResponse.status} - ${errorText}`
+            });
           
           // Store failed email
           await supabase
@@ -166,6 +194,16 @@ serve(async (req) => {
         if (isValidEmail && hasValidMX && isNotDisposable) {
           console.log(`SUCCESS - ${email} - Valid: ${isValidEmail}, MX: ${hasValidMX}, Not Disposable: ${isNotDisposable}`);
           
+          // Log success
+          await supabase
+            .from('generation_logs')
+            .insert({
+              session_id: sessionId,
+              email,
+              status: 'success',
+              reason: `Valid: ${isValidEmail}, MX: ${hasValidMX}, Not Disposable: ${isNotDisposable}`
+            });
+          
           generatedEmails.push({
             email,
             first_name: randomName.first_name,
@@ -181,6 +219,16 @@ serve(async (req) => {
           const failReason = `Valid: ${isValidEmail}, MX: ${hasValidMX}, Disposable: ${!isNotDisposable}`;
           console.log(`FAILED - ${email} - ${failReason}`);
           
+          // Log failure
+          await supabase
+            .from('generation_logs')
+            .insert({
+              session_id: sessionId,
+              email,
+              status: 'failed',
+              reason: failReason
+            });
+          
           // Store failed email
           await supabase
             .from('failed_emails')
@@ -195,6 +243,16 @@ serve(async (req) => {
         }
       } catch (verifyError: any) {
         console.error(`ERROR - ${email} - ${verifyError.message}`);
+        
+        // Log error
+        await supabase
+          .from('generation_logs')
+          .insert({
+            session_id: sessionId,
+            email,
+            status: 'failed',
+            reason: `Exception: ${verifyError.message}`
+          });
         
         // Store failed email
         await supabase
