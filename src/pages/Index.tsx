@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Mail, CheckCircle2, XCircle, Loader2, Calendar, Shield } from "lucide-react";
+import { Mail, CheckCircle2, XCircle, Loader2, Calendar, Shield, Trash2 } from "lucide-react";
 import { EmailsTable } from "@/components/EmailsTable";
 import { StatsCards } from "@/components/StatsCards";
 import { GenerationLogs } from "@/components/GenerationLogs";
@@ -77,6 +77,38 @@ const Index = () => {
       setDailyCount(data?.emails_generated || 0);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleClearEmails = async () => {
+    try {
+      setLoading(true);
+      
+      // Delete all generated emails
+      const { error: emailsError } = await supabase
+        .from("generated_emails")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all rows
+      
+      if (emailsError) throw emailsError;
+      
+      // Reset daily tracking
+      const today = new Date().toISOString().split('T')[0];
+      const { error: trackingError } = await supabase
+        .from("daily_generation_tracking")
+        .delete()
+        .eq("generation_date", today);
+      
+      if (trackingError) throw trackingError;
+      
+      toast.success("All emails cleared successfully!");
+      await fetchEmails();
+      await fetchDailyCount();
+    } catch (error: any) {
+      toast.error("Failed to clear emails");
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -212,29 +244,42 @@ const Index = () => {
               </div>
             </div>
             
-            <Button
-              onClick={handleGenerate}
-              disabled={generating || dailyCount >= 25}
-              className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
-              size="lg"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating & Verifying...
-                </>
-              ) : dailyCount >= 25 ? (
-                <>
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Daily Limit Reached
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Generate Verified Emails
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleGenerate}
+                disabled={generating || dailyCount >= 25}
+                className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
+                size="lg"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Generating & Verifying...
+                  </>
+                ) : dailyCount >= 25 ? (
+                  <>
+                    <Calendar className="mr-2 h-5 w-5" />
+                    Daily Limit Reached
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Generate Verified Emails
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={handleClearEmails}
+                disabled={generating || loading || emails.length === 0}
+                variant="outline"
+                className="h-12 px-6"
+                size="lg"
+              >
+                <Trash2 className="mr-2 h-5 w-5" />
+                Clear All
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
