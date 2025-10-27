@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Mail, CheckCircle2, XCircle, Loader2, Calendar, Shield, Trash2 } from "lucide-react";
+import { Mail, CheckCircle2, XCircle, Loader2, Shield, Trash2 } from "lucide-react";
 import { EmailsTable } from "@/components/EmailsTable";
 import { StatsCards } from "@/components/StatsCards";
 import { GenerationLogs } from "@/components/GenerationLogs";
@@ -20,7 +20,6 @@ const Index = () => {
   const [emails, setEmails] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [dailyCount, setDailyCount] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -31,7 +30,6 @@ const Index = () => {
 
   useEffect(() => {
     fetchEmails();
-    fetchDailyCount();
   }, []);
 
   const fetchEmails = async () => {
@@ -64,21 +62,6 @@ const Index = () => {
     }
   };
 
-  const fetchDailyCount = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from("daily_generation_tracking")
-        .select("*")
-        .eq("generation_date", today)
-        .maybeSingle();
-
-      if (error) throw error;
-      setDailyCount(data?.emails_generated || 0);
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const handleClearEmails = async () => {
     try {
@@ -92,18 +75,8 @@ const Index = () => {
       
       if (emailsError) throw emailsError;
       
-      // Reset daily tracking
-      const today = new Date().toISOString().split('T')[0];
-      const { error: trackingError } = await supabase
-        .from("daily_generation_tracking")
-        .delete()
-        .eq("generation_date", today);
-      
-      if (trackingError) throw trackingError;
-      
       toast.success("All emails cleared successfully!");
       await fetchEmails();
-      await fetchDailyCount();
     } catch (error: any) {
       toast.error("Failed to clear emails");
       console.error(error);
@@ -113,11 +86,6 @@ const Index = () => {
   };
 
   const handleGenerate = async () => {
-    if (dailyCount >= 25) {
-      toast.error("Daily limit of 25 emails reached. Try again tomorrow!");
-      return;
-    }
-
     setGenerating(true);
     setLogs([]); // Clear previous logs
     
@@ -180,7 +148,6 @@ const Index = () => {
       );
       
       await fetchEmails();
-      await fetchDailyCount();
       
       // Clean up old logs for this session after 30 seconds
       setTimeout(async () => {
@@ -217,7 +184,7 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Generate Section - Moved to Top */}
+        {/* Generate Section */}
         <Card className="border-2 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -225,29 +192,14 @@ const Index = () => {
               Generate Verified Emails
             </CardTitle>
             <CardDescription>
-              Click the button below to generate up to 25 verified emails per day
+              Generate 25 verified emails per run
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Daily Limit</p>
-                <p className="text-2xl font-bold text-primary">
-                  {dailyCount} / 25
-                </p>
-              </div>
-              <div className="space-y-1 text-right">
-                <p className="text-sm font-medium">Remaining Today</p>
-                <p className="text-2xl font-bold text-accent">
-                  {25 - dailyCount}
-                </p>
-              </div>
-            </div>
-            
             <div className="flex gap-3">
               <Button
                 onClick={handleGenerate}
-                disabled={generating || dailyCount >= 25}
+                disabled={generating}
                 className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
                 size="lg"
               >
@@ -255,11 +207,6 @@ const Index = () => {
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Generating & Verifying...
-                  </>
-                ) : dailyCount >= 25 ? (
-                  <>
-                    <Calendar className="mr-2 h-5 w-5" />
-                    Daily Limit Reached
                   </>
                 ) : (
                   <>
@@ -284,7 +231,7 @@ const Index = () => {
         </Card>
 
         {/* Stats */}
-        <StatsCards stats={stats} dailyCount={dailyCount} />
+        <StatsCards stats={stats} />
 
         {/* Real-Time Logs */}
         <GenerationLogs logs={logs} isGenerating={generating} />

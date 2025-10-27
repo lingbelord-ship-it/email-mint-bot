@@ -33,38 +33,7 @@ serve(async (req) => {
 
     console.log('Starting email generation process with session:', sessionId);
 
-    // Check today's generation count
-    const today = new Date().toISOString().split('T')[0];
-    const { data: tracking, error: trackingError } = await supabase
-      .from('daily_generation_tracking')
-      .select('*')
-      .eq('generation_date', today)
-      .maybeSingle();
-
-    if (trackingError) {
-      console.error('Error fetching tracking:', trackingError);
-      throw trackingError;
-    }
-
-    const currentCount = tracking?.emails_generated || 0;
-    const limit = 25;
-
-    if (currentCount >= limit) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Daily limit reached', 
-          generated: 0,
-          limit,
-          current: currentCount 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const toGenerate = Math.min(limit - currentCount, limit);
+    const toGenerate = 25;
     console.log(`Will generate ${toGenerate} emails`);
 
     // Get all names
@@ -294,21 +263,6 @@ serve(async (req) => {
     if (insertError) {
       console.error('Error inserting emails:', insertError);
       throw insertError;
-    }
-
-    // Update tracking
-    if (tracking) {
-      await supabase
-        .from('daily_generation_tracking')
-        .update({ emails_generated: currentCount + generatedEmails.length })
-        .eq('generation_date', today);
-    } else {
-      await supabase
-        .from('daily_generation_tracking')
-        .insert({ 
-          generation_date: today, 
-          emails_generated: generatedEmails.length 
-        });
     }
 
     console.log('Email generation completed successfully');
