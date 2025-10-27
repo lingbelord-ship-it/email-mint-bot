@@ -45,6 +45,14 @@ const Index = () => {
   const [useCompanyNames, setUseCompanyNames] = useState(false);
   const [useSportsTerms, setUseSportsTerms] = useState(false);
   const [useCommonWords, setUseCommonWords] = useState(false);
+  
+  // Name region options
+  const [useWestern, setUseWestern] = useState(true);
+  const [useIndian, setUseIndian] = useState(true);
+  const [useArabic, setUseArabic] = useState(true);
+  const [useJewish, setUseJewish] = useState(true);
+  const [usePakistani, setUsePakistani] = useState(true);
+  const [useAfrican, setUseAfrican] = useState(true);
 
   useEffect(() => {
     fetchEmails();
@@ -227,6 +235,14 @@ const Index = () => {
               useCompanyNames,
               useSportsTerms,
               useCommonWords
+            },
+            regions: {
+              western: useWestern,
+              indian: useIndian,
+              arabic: useArabic,
+              jewish: useJewish,
+              pakistani: usePakistani,
+              african: useAfrican
             }
           })
         }
@@ -428,6 +444,69 @@ const Index = () => {
                 </div>
               </div>
             </div>
+
+            {/* Name Region Options */}
+            {useNames && (
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <h3 className="text-sm font-semibold text-foreground">Name Regions (Select at least one)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useWestern" 
+                      checked={useWestern}
+                      onCheckedChange={(checked) => setUseWestern(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useWestern" className="text-sm cursor-pointer">Western</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useIndian" 
+                      checked={useIndian}
+                      onCheckedChange={(checked) => setUseIndian(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useIndian" className="text-sm cursor-pointer">Indian</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useArabic" 
+                      checked={useArabic}
+                      onCheckedChange={(checked) => setUseArabic(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useArabic" className="text-sm cursor-pointer">Arabic</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useJewish" 
+                      checked={useJewish}
+                      onCheckedChange={(checked) => setUseJewish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useJewish" className="text-sm cursor-pointer">Jewish</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="usePakistani" 
+                      checked={usePakistani}
+                      onCheckedChange={(checked) => setUsePakistani(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="usePakistani" className="text-sm cursor-pointer">Pakistani</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useAfrican" 
+                      checked={useAfrican}
+                      onCheckedChange={(checked) => setUseAfrican(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useAfrican" className="text-sm cursor-pointer">African</Label>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex gap-3">
               <Button
                 onClick={handleGenerate}

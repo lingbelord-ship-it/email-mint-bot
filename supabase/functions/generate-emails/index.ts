@@ -29,6 +29,14 @@ serve(async (req) => {
       useSportsTerms: false,
       useCommonWords: false
     };
+    let regions = {
+      western: true,
+      indian: true,
+      arabic: true,
+      jewish: true,
+      pakistani: true,
+      african: true
+    };
     
     try {
       const body = await req.json();
@@ -37,6 +45,7 @@ serve(async (req) => {
       maxApiRequests = body.max_api_requests || 50;
       if (body.patterns) patterns = { ...patterns, ...body.patterns };
       if (body.categories) categories = { ...categories, ...body.categories };
+      if (body.regions) regions = { ...regions, ...body.regions };
     } catch {
       // If no body, use defaults
     }
@@ -59,16 +68,28 @@ serve(async (req) => {
     console.log(`Will generate ${toGenerate} emails with max ${maxApiRequests} API requests`);
     console.log('Patterns:', patterns);
     console.log('Categories:', categories);
+    console.log('Regions:', regions);
 
     // Fetch data based on selected categories
     const dataSources: any = {};
     
     if (categories.useNames) {
+      // Build region filter
+      const selectedRegions = Object.entries(regions)
+        .filter(([_, enabled]) => enabled)
+        .map(([region, _]) => region);
+      
+      if (selectedRegions.length === 0) {
+        throw new Error('At least one name region must be selected');
+      }
+      
       const { data: names, error: namesError } = await supabase
         .from('names')
-        .select('first_name, last_name');
+        .select('first_name, last_name, region')
+        .in('region', selectedRegions);
       if (!namesError && names && names.length > 0) {
         dataSources.names = names;
+        console.log(`Loaded ${names.length} names from regions: ${selectedRegions.join(', ')}`);
       }
     }
     
