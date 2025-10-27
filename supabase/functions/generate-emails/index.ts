@@ -28,7 +28,7 @@ serve(async (req) => {
 
     const emailDetectiveKey = Deno.env.get('ABSTRACTAPI_KEY');
     if (!emailDetectiveKey) {
-      throw new Error('EMAIL_DETECTIVE_API_KEY not configured');
+      throw new Error('ABSTRACTAPI_KEY not configured');
     }
 
     console.log('Starting email generation process with session:', sessionId);
@@ -148,7 +148,7 @@ serve(async (req) => {
           `https://api.emaildetective.io/emails/${encodeURIComponent(email)}`,
           {
             headers: {
-              'Authorization': emailDetectiveKey  // Fixed: removed Bearer prefix
+              'Authorization': `Bearer ${emailDetectiveKey}`
             }
           }
         );
