@@ -17,9 +17,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const abstractApiKey = Deno.env.get('ABSTRACTAPI_KEY');
-    if (!abstractApiKey) {
-      throw new Error('ABSTRACTAPI_KEY not configured');
+    const emailDetectiveKey = Deno.env.get('ABSTRACTAPI_KEY');
+    if (!emailDetectiveKey) {
+      throw new Error('EMAIL_DETECTIVE_API_KEY not configured');
     }
 
     console.log('Starting email generation process...');
@@ -100,10 +100,15 @@ serve(async (req) => {
 
       console.log(`Verifying email: ${email}`);
 
-      // Verify email with AbstractAPI
+      // Verify email with EmailDetective.io
       try {
         const verifyResponse = await fetch(
-          `https://emailvalidation.abstractapi.com/v1/?api_key=${abstractApiKey}&email=${encodeURIComponent(email)}`
+          `https://api.emaildetective.io/emails/${encodeURIComponent(email)}`,
+          {
+            headers: {
+              'Authorization': emailDetectiveKey
+            }
+          }
         );
 
         if (!verifyResponse.ok) {
@@ -114,12 +119,15 @@ serve(async (req) => {
         const verificationData = await verifyResponse.json();
         console.log(`Verification result for ${email}:`, verificationData);
 
-        const isDeliverable = verificationData.deliverability === 'DELIVERABLE';
-        const isVerified = verificationData.is_valid_format?.value && 
-                          verificationData.is_smtp_valid?.value;
+        // Check if email is valid and deliverable
+        const isValidEmail = verificationData.valid_email === true;
+        const hasValidMX = verificationData.valid_mx === true;
+        const isNotDisposable = verificationData.disposable === false;
+        const isDeliverable = isValidEmail && hasValidMX && isNotDisposable;
+        const isVerified = isValidEmail && hasValidMX;
 
-        // Only add emails that are at least valid format
-        if (verificationData.is_valid_format?.value) {
+        // Only add emails that pass validation checks
+        if (isValidEmail && hasValidMX && isNotDisposable) {
           generatedEmails.push({
             email,
             first_name: randomName.first_name,
@@ -131,6 +139,8 @@ serve(async (req) => {
           });
 
           existingEmailSet.add(email);
+        } else {
+          console.log(`Email ${email} failed validation: valid=${isValidEmail}, mx=${hasValidMX}, disposable=${!isNotDisposable}`);
         }
       } catch (verifyError) {
         console.error(`Error verifying ${email}:`, verifyError);
