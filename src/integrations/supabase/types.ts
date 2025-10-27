@@ -122,6 +122,24 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_stop_signals: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       names: {
         Row: {
           created_at: string | null

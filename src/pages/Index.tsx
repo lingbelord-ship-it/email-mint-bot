@@ -20,6 +20,7 @@ const Index = () => {
   const [emails, setEmails] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -85,12 +86,72 @@ const Index = () => {
     }
   };
 
+  const handleStop = async () => {
+    if (!currentSessionId) return;
+    
+    try {
+      // Insert stop signal
+      await supabase
+        .from('generation_stop_signals')
+        .insert({ session_id: currentSessionId });
+      
+      toast.info("Stop signal sent. Generation will halt after current email check.");
+    } catch (error: any) {
+      console.error("Failed to send stop signal:", error);
+    }
+  };
+
+  const exportToCSV = () => {
+    if (emails.length === 0) {
+      toast.error("No emails to export");
+      return;
+    }
+
+    // Filter only verified and deliverable emails
+    const validEmails = emails.filter(e => e.is_verified && e.is_deliverable);
+    
+    if (validEmails.length === 0) {
+      toast.error("No valid emails to export");
+      return;
+    }
+
+    // Create CSV content
+    const headers = ['Email', 'First Name', 'Last Name', 'Verified', 'Deliverable', 'Created At'];
+    const rows = validEmails.map(email => [
+      email.email,
+      email.first_name,
+      email.last_name,
+      email.is_verified ? 'Yes' : 'No',
+      email.is_deliverable ? 'Yes' : 'No',
+      new Date(email.created_at).toLocaleString()
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `verified-emails-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(`Exported ${validEmails.length} valid emails to CSV`);
+  };
+
   const handleGenerate = async () => {
     setGenerating(true);
     setLogs([]); // Clear previous logs
     
     // Generate a unique session ID for this generation run
     const sessionId = crypto.randomUUID();
+    setCurrentSessionId(sessionId);
     
     // Subscribe to real-time logs for this session
     const channel = supabase
@@ -161,8 +222,17 @@ const Index = () => {
       console.error(error);
     } finally {
       setGenerating(false);
+      setCurrentSessionId(null);
       // Unsubscribe from the channel
       supabase.removeChannel(channel);
+      
+      // Clean up stop signal
+      if (sessionId) {
+        await supabase
+          .from('generation_stop_signals')
+          .delete()
+          .eq('session_id', sessionId);
+      }
     }
   };
 
@@ -216,6 +286,18 @@ const Index = () => {
                 )}
               </Button>
               
+              {generating && (
+                <Button
+                  onClick={handleStop}
+                  variant="destructive"
+                  className="h-12 px-6"
+                  size="lg"
+                >
+                  <XCircle className="mr-2 h-5 w-5" />
+                  Stop
+                </Button>
+              )}
+              
               <Button
                 onClick={handleClearEmails}
                 disabled={generating || loading || emails.length === 0}
@@ -227,6 +309,16 @@ const Index = () => {
                 Clear All
               </Button>
             </div>
+            <Button
+              onClick={exportToCSV}
+              disabled={loading || emails.length === 0}
+              variant="secondary"
+              className="w-full h-10"
+              size="lg"
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Export Valid Emails to CSV
+            </Button>
           </CardContent>
         </Card>
 

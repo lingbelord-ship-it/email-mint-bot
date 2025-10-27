@@ -77,6 +77,18 @@ serve(async (req) => {
     while (generatedEmails.length < toGenerate && attempts < maxAttempts) {
       attempts++;
       
+      // Check for stop signal
+      const { data: stopSignal } = await supabase
+        .from('generation_stop_signals')
+        .select('session_id')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+      
+      if (stopSignal) {
+        console.log('Stop signal received, halting generation');
+        break;
+      }
+      
       // Pick random name
       const randomName = names[Math.floor(Math.random() * names.length)];
       const provider = emailProviders[Math.floor(Math.random() * emailProviders.length)];
@@ -136,6 +148,22 @@ serve(async (req) => {
         if (!verifyResponse.ok) {
           const errorText = await verifyResponse.text();
           console.error(`FAILED - ${email} - Status ${verifyResponse.status}: ${errorText}`);
+          
+          // Check if it's a credit/quota error (402 Payment Required or 429 Too Many Requests)
+          if (verifyResponse.status === 402 || verifyResponse.status === 429) {
+            console.log('Credit limit reached or rate limit hit, stopping generation');
+            
+            await supabase
+              .from('generation_logs')
+              .insert({
+                session_id: sessionId,
+                email,
+                status: 'failed',
+                reason: `Credits exhausted or rate limited: ${verifyResponse.status}`
+              });
+            
+            break; // Stop the loop
+          }
           
           // Log failure
           await supabase

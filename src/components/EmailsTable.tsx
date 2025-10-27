@@ -37,7 +37,7 @@ export const EmailsTable = ({ emails, loading }: EmailsTableProps) => {
             <p className="text-sm">Click the generate button above to get started</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="w-full">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
