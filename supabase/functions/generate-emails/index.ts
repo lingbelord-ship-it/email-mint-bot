@@ -12,13 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    // Get session ID and count from request body
+    // Get session ID, count, and max API requests from request body
     let sessionId = crypto.randomUUID();
     let toGenerate = 25;
+    let maxApiRequests = 50;
     try {
       const body = await req.json();
       sessionId = body.session_id || sessionId;
       toGenerate = body.count || 25;
+      maxApiRequests = body.max_api_requests || 50;
     } catch {
       // If no body, use defaults
     }
@@ -38,7 +40,7 @@ serve(async (req) => {
     const authHeader = `Basic ${btoa(`${verifaliaUsername}:${verifaliaPassword}`)}`;
 
     console.log('Starting email generation process with session:', sessionId);
-    console.log(`Will generate ${toGenerate} emails`);
+    console.log(`Will generate ${toGenerate} emails with max ${maxApiRequests} API requests`);
 
     // Get all names
     const { data: names, error: namesError } = await supabase
@@ -72,9 +74,9 @@ serve(async (req) => {
     console.log(`Found ${failedEmailsSet.size} previously failed emails to skip`);
     
     let attempts = 0;
-    const maxAttempts = toGenerate * 20;
+    let apiRequestCount = 0;
 
-    while (generatedEmails.length < toGenerate && attempts < maxAttempts) {
+    while (generatedEmails.length < toGenerate && attempts < (toGenerate * 20) && apiRequestCount < maxApiRequests) {
       attempts++;
       
       // Check for stop signal
@@ -124,9 +126,16 @@ serve(async (req) => {
           status: 'testing'
         });
 
-      console.log(`Testing email: ${email}`);
+      console.log(`Testing email: ${email} (API request ${apiRequestCount + 1}/${maxApiRequests})`);
+
+      // Check if we've reached the API request limit
+      if (apiRequestCount >= maxApiRequests) {
+        console.log(`Reached API request limit of ${maxApiRequests}, stopping generation`);
+        break;
+      }
 
       // Verify email with Verifalia
+      apiRequestCount++;
       try {
         const verifyResponse = await fetch(
           'https://api.verifalia.com/v2.7/email-validations?waitTime=30000',
@@ -303,7 +312,7 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    console.log(`Generated ${generatedEmails.length} emails`);
+    console.log(`Generated ${generatedEmails.length} emails using ${apiRequestCount} API requests`);
 
     if (generatedEmails.length === 0) {
       return new Response(

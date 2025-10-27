@@ -22,6 +22,7 @@ const Index = () => {
   const [generating, setGenerating] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [emailCount, setEmailCount] = useState(25);
+  const [maxApiRequests, setMaxApiRequests] = useState(50);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -197,7 +198,8 @@ const Index = () => {
           },
           body: JSON.stringify({ 
             session_id: sessionId,
-            count: emailCount 
+            count: emailCount,
+            max_api_requests: maxApiRequests
           })
         }
       );
@@ -270,20 +272,37 @@ const Index = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-3 items-center">
-              <label htmlFor="emailCount" className="text-sm font-medium whitespace-nowrap">
-                Emails to generate:
-              </label>
-              <input
-                id="emailCount"
-                type="number"
-                min="1"
-                max="100"
-                value={emailCount}
-                onChange={(e) => setEmailCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                disabled={generating}
-                className="w-24 px-3 py-2 border rounded-md bg-background"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex gap-3 items-center">
+                <label htmlFor="emailCount" className="text-sm font-medium whitespace-nowrap">
+                  Emails to generate:
+                </label>
+                <input
+                  id="emailCount"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={emailCount}
+                  onChange={(e) => setEmailCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                  disabled={generating}
+                  className="w-24 px-3 py-2 border rounded-md bg-background"
+                />
+              </div>
+              <div className="flex gap-3 items-center">
+                <label htmlFor="maxApiRequests" className="text-sm font-medium whitespace-nowrap">
+                  Max API requests:
+                </label>
+                <input
+                  id="maxApiRequests"
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={maxApiRequests}
+                  onChange={(e) => setMaxApiRequests(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
+                  disabled={generating}
+                  className="w-24 px-3 py-2 border rounded-md bg-background"
+                />
+              </div>
             </div>
             <div className="flex gap-3">
               <Button
