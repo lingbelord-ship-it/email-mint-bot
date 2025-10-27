@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, CheckCircle2, XCircle, Loader2, Shield, Trash2 } from "lucide-react";
 import { EmailsTable } from "@/components/EmailsTable";
@@ -30,6 +32,19 @@ const Index = () => {
     deliverable: 0,
     today: 0,
   });
+  
+  // Email pattern options
+  const [useFirstName, setUseFirstName] = useState(true);
+  const [useLastName, setUseLastName] = useState(true);
+  const [includeNumbers, setIncludeNumbers] = useState(true);
+  const [includeDots, setIncludeDots] = useState(true);
+  const [useAbbreviations, setUseAbbreviations] = useState(true);
+  
+  // Category options
+  const [useNames, setUseNames] = useState(true);
+  const [useCompanyNames, setUseCompanyNames] = useState(false);
+  const [useSportsTerms, setUseSportsTerms] = useState(false);
+  const [useCommonWords, setUseCommonWords] = useState(false);
 
   useEffect(() => {
     fetchEmails();
@@ -199,7 +214,20 @@ const Index = () => {
           body: JSON.stringify({ 
             session_id: sessionId,
             count: emailCount,
-            max_api_requests: maxApiRequests
+            max_api_requests: maxApiRequests,
+            patterns: {
+              useFirstName,
+              useLastName,
+              includeNumbers,
+              includeDots,
+              useAbbreviations
+            },
+            categories: {
+              useNames,
+              useCompanyNames,
+              useSportsTerms,
+              useCommonWords
+            }
           })
         }
       );
@@ -268,10 +296,11 @@ const Index = () => {
               Generate Verified Emails
             </CardTitle>
             <CardDescription>
-              Set how many emails to generate per run
+              Configure email generation patterns and settings
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* Generation Settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex gap-3 items-center">
                 <label htmlFor="emailCount" className="text-sm font-medium whitespace-nowrap">
@@ -302,6 +331,101 @@ const Index = () => {
                   disabled={generating}
                   className="w-24 px-3 py-2 border rounded-md bg-background"
                 />
+              </div>
+            </div>
+
+            {/* Email Pattern Options */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Email Patterns</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useFirstName" 
+                    checked={useFirstName}
+                    onCheckedChange={(checked) => setUseFirstName(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useFirstName" className="text-sm cursor-pointer">Use First Name</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useLastName" 
+                    checked={useLastName}
+                    onCheckedChange={(checked) => setUseLastName(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useLastName" className="text-sm cursor-pointer">Use Last Name</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="includeNumbers" 
+                    checked={includeNumbers}
+                    onCheckedChange={(checked) => setIncludeNumbers(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="includeNumbers" className="text-sm cursor-pointer">Include Numbers</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="includeDots" 
+                    checked={includeDots}
+                    onCheckedChange={(checked) => setIncludeDots(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="includeDots" className="text-sm cursor-pointer">Include Dots/Periods</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useAbbreviations" 
+                    checked={useAbbreviations}
+                    onCheckedChange={(checked) => setUseAbbreviations(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useAbbreviations" className="text-sm cursor-pointer">Use Abbreviations</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Category Options */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Email Categories</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useNames" 
+                    checked={useNames}
+                    onCheckedChange={(checked) => setUseNames(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useNames" className="text-sm cursor-pointer">Names</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useCompanyNames" 
+                    checked={useCompanyNames}
+                    onCheckedChange={(checked) => setUseCompanyNames(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useCompanyNames" className="text-sm cursor-pointer">Company Names</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useSportsTerms" 
+                    checked={useSportsTerms}
+                    onCheckedChange={(checked) => setUseSportsTerms(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useSportsTerms" className="text-sm cursor-pointer">Sports Terms</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useCommonWords" 
+                    checked={useCommonWords}
+                    onCheckedChange={(checked) => setUseCommonWords(checked === true)}
+                    disabled={generating}
+                  />
+                  <Label htmlFor="useCommonWords" className="text-sm cursor-pointer">Common Words</Label>
+                </div>
               </div>
             </div>
             <div className="flex gap-3">

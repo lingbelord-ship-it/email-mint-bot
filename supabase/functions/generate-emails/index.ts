@@ -12,15 +12,31 @@ serve(async (req) => {
   }
 
   try {
-    // Get session ID, count, and max API requests from request body
+    // Get session ID, count, max API requests, and pattern options from request body
     let sessionId = crypto.randomUUID();
     let toGenerate = 25;
     let maxApiRequests = 50;
+    let patterns = {
+      useFirstName: true,
+      useLastName: true,
+      includeNumbers: true,
+      includeDots: true,
+      useAbbreviations: true
+    };
+    let categories = {
+      useNames: true,
+      useCompanyNames: false,
+      useSportsTerms: false,
+      useCommonWords: false
+    };
+    
     try {
       const body = await req.json();
       sessionId = body.session_id || sessionId;
       toGenerate = body.count || 25;
       maxApiRequests = body.max_api_requests || 50;
+      if (body.patterns) patterns = { ...patterns, ...body.patterns };
+      if (body.categories) categories = { ...categories, ...body.categories };
     } catch {
       // If no body, use defaults
     }
@@ -41,16 +57,54 @@ serve(async (req) => {
 
     console.log('Starting email generation process with session:', sessionId);
     console.log(`Will generate ${toGenerate} emails with max ${maxApiRequests} API requests`);
+    console.log('Patterns:', patterns);
+    console.log('Categories:', categories);
 
-    // Get all names
-    const { data: names, error: namesError } = await supabase
-      .from('names')
-      .select('first_name, last_name');
-
-    if (namesError || !names || names.length === 0) {
-      console.error('Error fetching names:', namesError);
-      throw new Error('No names available in database');
+    // Fetch data based on selected categories
+    const dataSources: any = {};
+    
+    if (categories.useNames) {
+      const { data: names, error: namesError } = await supabase
+        .from('names')
+        .select('first_name, last_name');
+      if (!namesError && names && names.length > 0) {
+        dataSources.names = names;
+      }
     }
+    
+    if (categories.useCompanyNames) {
+      const { data: companies, error: companiesError } = await supabase
+        .from('company_names')
+        .select('name');
+      if (!companiesError && companies && companies.length > 0) {
+        dataSources.companies = companies;
+      }
+    }
+    
+    if (categories.useSportsTerms) {
+      const { data: sports, error: sportsError } = await supabase
+        .from('sports_terms')
+        .select('term');
+      if (!sportsError && sports && sports.length > 0) {
+        dataSources.sports = sports;
+      }
+    }
+    
+    if (categories.useCommonWords) {
+      const { data: words, error: wordsError } = await supabase
+        .from('common_words')
+        .select('word');
+      if (!wordsError && words && words.length > 0) {
+        dataSources.words = words;
+      }
+    }
+    
+    // Check if we have at least one data source
+    if (Object.keys(dataSources).length === 0) {
+      throw new Error('No data sources available. Please select at least one category.');
+    }
+    
+    console.log('Available data sources:', Object.keys(dataSources));
 
     // Get already generated emails to avoid duplicates
     const { data: existingEmails } = await supabase
@@ -91,26 +145,61 @@ serve(async (req) => {
         break;
       }
       
-      // Pick random name
-      const randomName = names[Math.floor(Math.random() * names.length)];
+      // Generate email based on selected patterns and categories
+      let emailParts: string[] = [];
+      let sourceData: any = null;
+      
+      // Pick a random category from available sources
+      const availableSources = Object.keys(dataSources);
+      const randomSource = availableSources[Math.floor(Math.random() * availableSources.length)];
+      
+      // Generate email parts based on the selected source
+      if (randomSource === 'names' && dataSources.names) {
+        const randomName = dataSources.names[Math.floor(Math.random() * dataSources.names.length)];
+        sourceData = randomName;
+        
+        if (patterns.useFirstName && patterns.useLastName) {
+          // Combine first and last name in various ways
+          const firstName = randomName.first_name.toLowerCase();
+          const lastName = randomName.last_name.toLowerCase();
+          
+          const namePatterns = [];
+          if (!patterns.useAbbreviations || Math.random() > 0.5) {
+            namePatterns.push(`${firstName}${lastName}`);
+            if (patterns.includeDots) namePatterns.push(`${firstName}.${lastName}`);
+            namePatterns.push(`${firstName}_${lastName}`);
+          }
+          if (patterns.useAbbreviations) {
+            namePatterns.push(`${firstName}${lastName.charAt(0)}`);
+            namePatterns.push(`${firstName.charAt(0)}${lastName}`);
+          }
+          
+          emailParts.push(namePatterns[Math.floor(Math.random() * namePatterns.length)]);
+        } else if (patterns.useFirstName) {
+          emailParts.push(randomName.first_name.toLowerCase());
+        } else if (patterns.useLastName) {
+          emailParts.push(randomName.last_name.toLowerCase());
+        }
+      } else if (randomSource === 'companies' && dataSources.companies) {
+        const randomCompany = dataSources.companies[Math.floor(Math.random() * dataSources.companies.length)];
+        emailParts.push(randomCompany.name.toLowerCase());
+      } else if (randomSource === 'sports' && dataSources.sports) {
+        const randomSport = dataSources.sports[Math.floor(Math.random() * dataSources.sports.length)];
+        emailParts.push(randomSport.term.toLowerCase());
+      } else if (randomSource === 'words' && dataSources.words) {
+        const randomWord = dataSources.words[Math.floor(Math.random() * dataSources.words.length)];
+        emailParts.push(randomWord.word.toLowerCase());
+      }
+      
+      // Add numbers if enabled
+      if (patterns.includeNumbers) {
+        const randomNum = Math.floor(Math.random() * 9999);
+        emailParts.push(randomNum.toString());
+      }
+      
+      // Join parts
       const provider = emailProviders[Math.floor(Math.random() * emailProviders.length)];
-      
-      // Generate email with variations (numbers, dots, underscores)
-      const firstName = randomName.first_name.toLowerCase();
-      const lastName = randomName.last_name.toLowerCase();
-      const randomNum = Math.floor(Math.random() * 9999);
-      
-      // Random variation patterns
-      const patterns = [
-        `${firstName}${lastName}${randomNum}`,
-        `${firstName}.${lastName}${randomNum}`,
-        `${firstName}_${lastName}${randomNum}`,
-        `${firstName}${lastName.charAt(0)}${randomNum}`,
-        `${firstName.charAt(0)}${lastName}${randomNum}`,
-      ];
-      
-      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-      const email = `${pattern}@${provider}`;
+      const email = `${emailParts.join('')}@${provider}`;
 
       // Check if email already exists or previously failed
       if (existingEmailSet.has(email) || failedEmailsSet.has(email)) {
@@ -247,8 +336,8 @@ serve(async (req) => {
           
           generatedEmails.push({
             email,
-            first_name: randomName.first_name,
-            last_name: randomName.last_name,
+            first_name: sourceData?.first_name || 'N/A',
+            last_name: sourceData?.last_name || 'N/A',
             is_verified: isVerified,
             is_deliverable: isDeliverable,
             verification_status: JSON.stringify(entry),

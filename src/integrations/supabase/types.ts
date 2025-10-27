@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      common_words: {
+        Row: {
+          created_at: string | null
+          id: string
+          word: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          word: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          word?: string
+        }
+        Relationships: []
+      }
+      company_names: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       daily_generation_tracking: {
         Row: {
           created_at: string | null
@@ -158,6 +194,24 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+        }
+        Relationships: []
+      }
+      sports_terms: {
+        Row: {
+          created_at: string | null
+          id: string
+          term: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          term: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          term?: string
         }
         Relationships: []
       }
