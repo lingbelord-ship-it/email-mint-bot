@@ -35,6 +35,30 @@ export type Database = {
         }
         Relationships: []
       }
+      failed_emails: {
+        Row: {
+          created_at: string | null
+          email: string
+          failed_at: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          failed_at?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          failed_at?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       generated_emails: {
         Row: {
           created_at: string | null

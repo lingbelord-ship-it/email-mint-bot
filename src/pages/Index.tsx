@@ -7,12 +7,21 @@ import { toast } from "sonner";
 import { Mail, CheckCircle2, XCircle, Loader2, Calendar, Shield } from "lucide-react";
 import { EmailsTable } from "@/components/EmailsTable";
 import { StatsCards } from "@/components/StatsCards";
+import { GenerationLogs } from "@/components/GenerationLogs";
+
+interface LogEntry {
+  email: string;
+  status: 'testing' | 'success' | 'failed';
+  reason?: string;
+  timestamp: Date;
+}
 
 const Index = () => {
   const [emails, setEmails] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     verified: 0,
@@ -78,6 +87,7 @@ const Index = () => {
     }
 
     setGenerating(true);
+    setLogs([]); // Clear previous logs
     
     try {
       const response = await fetch(
@@ -130,6 +140,9 @@ const Index = () => {
 
         {/* Stats */}
         <StatsCards stats={stats} dailyCount={dailyCount} />
+
+        {/* Real-Time Logs */}
+        <GenerationLogs logs={logs} isGenerating={generating} />
 
         {/* Generate Section */}
         <Card className="border-2 shadow-xl">

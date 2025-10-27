@@ -77,10 +77,21 @@ serve(async (req) => {
     console.log(`Found ${existingEmailSet.size} existing emails`);
 
     const generatedEmails = [];
-    const emailProviders = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+    const emailProviders = [
+      'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
+      'protonmail.com', 'aol.com', 'mail.com', 'zoho.com', 'yandex.com'
+    ];
+    
+    // Get failed emails to avoid retrying them
+    const { data: failedEmailsList } = await supabase
+      .from('failed_emails')
+      .select('email');
+    
+    const failedEmailsSet = new Set(failedEmailsList?.map(e => e.email) || []);
+    console.log(`Found ${failedEmailsSet.size} previously failed emails to skip`);
     
     let attempts = 0;
-    const maxAttempts = toGenerate * 10;
+    const maxAttempts = toGenerate * 20;
 
     while (generatedEmails.length < toGenerate && attempts < maxAttempts) {
       attempts++;
@@ -89,16 +100,29 @@ serve(async (req) => {
       const randomName = names[Math.floor(Math.random() * names.length)];
       const provider = emailProviders[Math.floor(Math.random() * emailProviders.length)];
       
-      // Generate email with random number
+      // Generate email with variations (numbers, dots, underscores)
+      const firstName = randomName.first_name.toLowerCase();
+      const lastName = randomName.last_name.toLowerCase();
       const randomNum = Math.floor(Math.random() * 9999);
-      const email = `${randomName.first_name.toLowerCase()}${randomName.last_name.toLowerCase()}${randomNum}@${provider}`;
+      
+      // Random variation patterns
+      const patterns = [
+        `${firstName}${lastName}${randomNum}`,
+        `${firstName}.${lastName}${randomNum}`,
+        `${firstName}_${lastName}${randomNum}`,
+        `${firstName}${lastName.charAt(0)}${randomNum}`,
+        `${firstName.charAt(0)}${lastName}${randomNum}`,
+      ];
+      
+      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+      const email = `${pattern}@${provider}`;
 
-      // Check if email already exists
-      if (existingEmailSet.has(email)) {
+      // Check if email already exists or previously failed
+      if (existingEmailSet.has(email) || failedEmailsSet.has(email)) {
         continue;
       }
 
-      console.log(`Verifying email: ${email}`);
+      console.log(`Testing email: ${email}`);
 
       // Verify email with EmailDetective.io
       try {
@@ -112,12 +136,24 @@ serve(async (req) => {
         );
 
         if (!verifyResponse.ok) {
-          console.error(`Verification API error for ${email}:`, verifyResponse.status);
+          const errorText = await verifyResponse.text();
+          console.error(`FAILED - ${email} - Status ${verifyResponse.status}: ${errorText}`);
+          
+          // Store failed email
+          await supabase
+            .from('failed_emails')
+            .insert({
+              email,
+              reason: `API Error: ${verifyResponse.status} - ${errorText}`
+            })
+            .select()
+            .single();
+          
+          failedEmailsSet.add(email);
           continue;
         }
 
         const verificationData = await verifyResponse.json();
-        console.log(`Verification result for ${email}:`, verificationData);
 
         // Check if email is valid and deliverable
         const isValidEmail = verificationData.valid_email === true;
@@ -128,6 +164,8 @@ serve(async (req) => {
 
         // Only add emails that pass validation checks
         if (isValidEmail && hasValidMX && isNotDisposable) {
+          console.log(`SUCCESS - ${email} - Valid: ${isValidEmail}, MX: ${hasValidMX}, Not Disposable: ${isNotDisposable}`);
+          
           generatedEmails.push({
             email,
             first_name: randomName.first_name,
@@ -140,10 +178,35 @@ serve(async (req) => {
 
           existingEmailSet.add(email);
         } else {
-          console.log(`Email ${email} failed validation: valid=${isValidEmail}, mx=${hasValidMX}, disposable=${!isNotDisposable}`);
+          const failReason = `Valid: ${isValidEmail}, MX: ${hasValidMX}, Disposable: ${!isNotDisposable}`;
+          console.log(`FAILED - ${email} - ${failReason}`);
+          
+          // Store failed email
+          await supabase
+            .from('failed_emails')
+            .insert({
+              email,
+              reason: failReason
+            })
+            .select()
+            .single();
+          
+          failedEmailsSet.add(email);
         }
-      } catch (verifyError) {
-        console.error(`Error verifying ${email}:`, verifyError);
+      } catch (verifyError: any) {
+        console.error(`ERROR - ${email} - ${verifyError.message}`);
+        
+        // Store failed email
+        await supabase
+          .from('failed_emails')
+          .insert({
+            email,
+            reason: `Exception: ${verifyError.message}`
+          })
+          .select()
+          .single();
+        
+        failedEmailsSet.add(email);
       }
 
       // Small delay to avoid rate limiting
