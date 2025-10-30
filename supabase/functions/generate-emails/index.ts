@@ -31,6 +31,7 @@ serve(async (req) => {
     };
     let regions = {
       western: true,
+      british: true,
       indian: true,
       arabic: true,
       jewish: true,
@@ -137,7 +138,7 @@ serve(async (req) => {
 
     const generatedEmails = [];
     const emailProviders = [
-      'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'
+      'gmail.com', 'outlook.com', 'hotmail.com', 'icloud.com'
     ];
     
     // Get failed emails to avoid retrying them

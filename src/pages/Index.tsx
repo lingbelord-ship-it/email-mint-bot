@@ -48,6 +48,7 @@ const Index = () => {
   
   // Name region options
   const [useWestern, setUseWestern] = useState(true);
+  const [useBritish, setUseBritish] = useState(true);
   const [useIndian, setUseIndian] = useState(true);
   const [useArabic, setUseArabic] = useState(true);
   const [useJewish, setUseJewish] = useState(true);
@@ -238,6 +239,7 @@ const Index = () => {
             },
             regions: {
               western: useWestern,
+              british: useBritish,
               indian: useIndian,
               arabic: useArabic,
               jewish: useJewish,
@@ -458,6 +460,15 @@ const Index = () => {
                       disabled={generating}
                     />
                     <Label htmlFor="useWestern" className="text-sm cursor-pointer">Western</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useBritish" 
+                      checked={useBritish}
+                      onCheckedChange={(checked) => setUseBritish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useBritish" className="text-sm cursor-pointer">British</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox 
