@@ -49,6 +49,15 @@ const Index = () => {
   // Name region options
   const [useWestern, setUseWestern] = useState(true);
   const [useBritish, setUseBritish] = useState(true);
+  const [useFinnish, setUseFinnish] = useState(true);
+  const [useSwedish, setUseSwedish] = useState(true);
+  const [useNorwegian, setUseNorwegian] = useState(true);
+  const [useDanish, setUseDanish] = useState(true);
+  const [useIrish, setUseIrish] = useState(true);
+  const [useScottish, setUseScottish] = useState(true);
+  const [useWelsh, setUseWelsh] = useState(true);
+  const [useDutch, setUseDutch] = useState(true);
+  const [useGerman, setUseGerman] = useState(true);
   const [useIndian, setUseIndian] = useState(true);
   const [useArabic, setUseArabic] = useState(true);
   const [useJewish, setUseJewish] = useState(true);
@@ -240,6 +249,15 @@ const Index = () => {
             regions: {
               western: useWestern,
               british: useBritish,
+              finnish: useFinnish,
+              swedish: useSwedish,
+              norwegian: useNorwegian,
+              danish: useDanish,
+              irish: useIrish,
+              scottish: useScottish,
+              welsh: useWelsh,
+              dutch: useDutch,
+              german: useGerman,
               indian: useIndian,
               arabic: useArabic,
               jewish: useJewish,
@@ -469,6 +487,87 @@ const Index = () => {
                       disabled={generating}
                     />
                     <Label htmlFor="useBritish" className="text-sm cursor-pointer">British</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useFinnish" 
+                      checked={useFinnish}
+                      onCheckedChange={(checked) => setUseFinnish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useFinnish" className="text-sm cursor-pointer">Finnish</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useSwedish" 
+                      checked={useSwedish}
+                      onCheckedChange={(checked) => setUseSwedish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useSwedish" className="text-sm cursor-pointer">Swedish</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useNorwegian" 
+                      checked={useNorwegian}
+                      onCheckedChange={(checked) => setUseNorwegian(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useNorwegian" className="text-sm cursor-pointer">Norwegian</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useDanish" 
+                      checked={useDanish}
+                      onCheckedChange={(checked) => setUseDanish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useDanish" className="text-sm cursor-pointer">Danish</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useIrish" 
+                      checked={useIrish}
+                      onCheckedChange={(checked) => setUseIrish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useIrish" className="text-sm cursor-pointer">Irish</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useScottish" 
+                      checked={useScottish}
+                      onCheckedChange={(checked) => setUseScottish(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useScottish" className="text-sm cursor-pointer">Scottish</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useWelsh" 
+                      checked={useWelsh}
+                      onCheckedChange={(checked) => setUseWelsh(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useWelsh" className="text-sm cursor-pointer">Welsh</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useDutch" 
+                      checked={useDutch}
+                      onCheckedChange={(checked) => setUseDutch(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useDutch" className="text-sm cursor-pointer">Dutch</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useGerman" 
+                      checked={useGerman}
+                      onCheckedChange={(checked) => setUseGerman(checked === true)}
+                      disabled={generating}
+                    />
+                    <Label htmlFor="useGerman" className="text-sm cursor-pointer">German</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox 
