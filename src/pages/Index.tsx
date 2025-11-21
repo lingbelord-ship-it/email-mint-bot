@@ -39,6 +39,7 @@ const Index = () => {
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeDots, setIncludeDots] = useState(true);
   const [useAbbreviations, setUseAbbreviations] = useState(true);
+  const [use2DigitsOnly, setUse2DigitsOnly] = useState(false);
   
   // Category options
   const [useNames, setUseNames] = useState(true);
@@ -238,7 +239,8 @@ const Index = () => {
               useLastName,
               includeNumbers,
               includeDots,
-              useAbbreviations
+              useAbbreviations,
+              use2DigitsOnly
             },
             categories: {
               useNames,
@@ -418,6 +420,15 @@ const Index = () => {
                     disabled={generating}
                   />
                   <Label htmlFor="useAbbreviations" className="text-sm cursor-pointer">Use Abbreviations</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="use2DigitsOnly" 
+                    checked={use2DigitsOnly}
+                    onCheckedChange={(checked) => setUse2DigitsOnly(checked === true)}
+                    disabled={generating || !includeNumbers}
+                  />
+                  <Label htmlFor="use2DigitsOnly" className="text-sm cursor-pointer">Use Only 2 Digits</Label>
                 </div>
               </div>
             </div>
