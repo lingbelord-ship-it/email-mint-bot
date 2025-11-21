@@ -21,7 +21,8 @@ serve(async (req) => {
       useLastName: true,
       includeNumbers: true,
       includeDots: true,
-      useAbbreviations: true
+      useAbbreviations: true,
+      use2DigitsOnly: false
     };
     let categories = {
       useNames: true,
@@ -224,7 +225,12 @@ serve(async (req) => {
       
       // Add numbers if enabled (2-4 digits only, realistic patterns)
       if (patterns.includeNumbers) {
-        const randomNum = Math.floor(Math.random() * 9990) + 10; // 10-9999
+        let randomNum;
+        if (patterns.use2DigitsOnly) {
+          randomNum = Math.floor(Math.random() * 90) + 10; // 10-99 (only 2 digits)
+        } else {
+          randomNum = Math.floor(Math.random() * 9990) + 10; // 10-9999 (2-4 digits)
+        }
         emailParts.push(randomNum.toString());
       }
       
