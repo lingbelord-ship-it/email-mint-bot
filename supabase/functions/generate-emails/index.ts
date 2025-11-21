@@ -32,6 +32,15 @@ serve(async (req) => {
     let regions = {
       western: true,
       british: true,
+      finnish: true,
+      swedish: true,
+      norwegian: true,
+      danish: true,
+      irish: true,
+      scottish: true,
+      welsh: true,
+      dutch: true,
+      german: true,
       indian: true,
       arabic: true,
       jewish: true,
@@ -213,9 +222,9 @@ serve(async (req) => {
         emailParts.push(randomWord.word.toLowerCase());
       }
       
-      // Add numbers if enabled
+      // Add numbers if enabled (2-4 digits only, realistic patterns)
       if (patterns.includeNumbers) {
-        const randomNum = Math.floor(Math.random() * 9999);
+        const randomNum = Math.floor(Math.random() * 9990) + 10; // 10-9999
         emailParts.push(randomNum.toString());
       }
       
