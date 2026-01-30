@@ -348,10 +348,11 @@ const Index = () => {
                   id="emailCount"
                   type="number"
                   min="1"
+                  max="100"
                   value={emailCount}
-                  onChange={(e) => setEmailCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => setEmailCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
                   disabled={generating}
-                  className="w-28 px-3 py-2 border rounded-md bg-background"
+                  className="w-24 px-3 py-2 border rounded-md bg-background"
                 />
               </div>
               <div className="flex gap-3 items-center">
@@ -362,10 +363,11 @@ const Index = () => {
                   id="maxApiRequests"
                   type="number"
                   min="1"
+                  max="500"
                   value={maxApiRequests}
-                  onChange={(e) => setMaxApiRequests(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => setMaxApiRequests(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
                   disabled={generating}
-                  className="w-28 px-3 py-2 border rounded-md bg-background"
+                  className="w-24 px-3 py-2 border rounded-md bg-background"
                 />
               </div>
             </div>
