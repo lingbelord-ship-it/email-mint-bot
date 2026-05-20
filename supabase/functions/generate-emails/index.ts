@@ -284,6 +284,26 @@ serve(async (req) => {
           const errorText = await verifyResponse.text();
           console.error(`FAILED - ${email} - Status ${verifyResponse.status}: ${errorText}`);
           
+          if (verifyResponse.status === 401) {
+            const reason = 'Verifalia authentication failed. Check that VERIFALIA_USERNAME and VERIFALIA_PASSWORD are for a Standard Verifalia sub-user with MFA disabled, empty IP/origin restrictions, HTTP Basic Auth enabled, and email-validations permission.';
+            await supabase
+              .from('generation_logs')
+              .insert({
+                session_id: sessionId,
+                email,
+                status: 'failed',
+                reason: `${reason} Verifalia response: ${errorText}`
+              });
+
+            return new Response(
+              JSON.stringify({ error: reason, verifalia_status: verifyResponse.status }),
+              {
+                status: 502,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          
           // Check if it's a credit/quota error (402 Payment Required or 429 Too Many Requests)
           if (verifyResponse.status === 402 || verifyResponse.status === 429) {
             console.log('Credit limit reached or rate limit hit, stopping generation');
