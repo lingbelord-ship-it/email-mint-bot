@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX IF NOT EXISTS generated_emails_email_unique ON public.generated_emails (lower(email));
+CREATE UNIQUE INDEX IF NOT EXISTS failed_emails_email_unique ON public.failed_emails (lower(email));
