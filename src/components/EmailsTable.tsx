@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Loader2, Mail } from "lucide-react";
+import { Fragment } from "react";
 
 interface EmailsTableProps {
   emails: any[];
@@ -58,7 +59,7 @@ export const EmailsTable = ({ emails, loading }: EmailsTableProps) => {
                   }
                   
                   return (
-                    <tbody key={email.id}>
+                    <Fragment key={email.id}>
                       <tr className="border-b hover:bg-muted/50 transition-colors">
                         <td className="p-4">
                           <code className="text-sm bg-muted px-2 py-1 rounded">
@@ -133,7 +134,7 @@ export const EmailsTable = ({ emails, loading }: EmailsTableProps) => {
                           </td>
                         </tr>
                       )}
-                    </tbody>
+                    </Fragment>
                   );
                 })}
               </tbody>
