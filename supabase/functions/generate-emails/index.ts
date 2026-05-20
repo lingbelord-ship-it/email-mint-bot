@@ -330,15 +330,13 @@ serve(async (req) => {
               reason: `API Error: ${verifyResponse.status} - ${errorText}`
             });
           
-          // Store failed email
+          // Store failed email (ignore duplicates)
           await supabase
             .from('failed_emails')
-            .insert({
-              email,
-              reason: `API Error: ${verifyResponse.status} - ${errorText}`
-            })
-            .select()
-            .single();
+            .upsert(
+              { email, reason: `API Error: ${verifyResponse.status} - ${errorText}` },
+              { onConflict: 'email', ignoreDuplicates: true }
+            );
           
           failedEmailsSet.add(email);
           continue;
@@ -416,15 +414,13 @@ serve(async (req) => {
               reason: failReason
             });
           
-          // Store failed email
+          // Store failed email (ignore duplicates)
           await supabase
             .from('failed_emails')
-            .insert({
-              email,
-              reason: failReason
-            })
-            .select()
-            .single();
+            .upsert(
+              { email, reason: failReason },
+              { onConflict: 'email', ignoreDuplicates: true }
+            );
           
           failedEmailsSet.add(email);
         }
@@ -441,15 +437,13 @@ serve(async (req) => {
             reason: `Exception: ${verifyError.message}`
           });
         
-        // Store failed email
+        // Store failed email (ignore duplicates)
         await supabase
           .from('failed_emails')
-          .insert({
-            email,
-            reason: `Exception: ${verifyError.message}`
-          })
-          .select()
-          .single();
+          .upsert(
+            { email, reason: `Exception: ${verifyError.message}` },
+            { onConflict: 'email', ignoreDuplicates: true }
+          );
         
         failedEmailsSet.add(email);
       }
@@ -470,10 +464,10 @@ serve(async (req) => {
       );
     }
 
-    // Insert generated emails
+    // Insert generated emails (ignore duplicates at the DB level for safety)
     const { error: insertError } = await supabase
       .from('generated_emails')
-      .insert(generatedEmails);
+      .upsert(generatedEmails, { onConflict: 'email', ignoreDuplicates: true });
 
     if (insertError) {
       console.error('Error inserting emails:', insertError);
