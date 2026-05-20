@@ -58,8 +58,8 @@ export const EmailsTable = ({ emails, loading }: EmailsTableProps) => {
                   }
                   
                   return (
-                    <>
-                      <tr key={email.id} className="border-b hover:bg-muted/50 transition-colors">
+                    <tbody key={email.id}>
+                      <tr className="border-b hover:bg-muted/50 transition-colors">
                         <td className="p-4">
                           <code className="text-sm bg-muted px-2 py-1 rounded">
                             {email.email}
@@ -133,7 +133,7 @@ export const EmailsTable = ({ emails, loading }: EmailsTableProps) => {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </tbody>
                   );
                 })}
               </tbody>
